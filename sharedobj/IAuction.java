@@ -17,5 +17,8 @@ public interface IAuction extends Remote{
     public SignedMessage submitBid(int auctionID, Bid bid) throws RemoteException;
     public SignedMessage openAuctionsToString() throws RemoteException;
     public SignedMessage availableItemsToString() throws RemoteException;
+    public SignedMessage register(String name, String email, String password) throws RemoteException;
+    public SignedMessage login(String email, String password) throws RemoteException;
+
     //public boolean createAccount(UserAccount acc, PublicKey pub) throws RemoteException;
 }

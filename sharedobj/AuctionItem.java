@@ -11,7 +11,7 @@ public class AuctionItem implements Serializable{
     private int itemId;
     private String itemTitle;
     private String itemDescription;
-    private ItemCondition itemCond;
+    //private ItemCondition itemCond;
 
     public AuctionItem(String _itemTitle, String _itemDescription){
         itemId = ++itemIDCount;

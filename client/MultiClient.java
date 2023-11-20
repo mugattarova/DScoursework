@@ -5,24 +5,20 @@ import java.util.*;
 import java.io.Serializable;
 import java.security.*;
 import java.math.BigInteger;
-import java.net.URI;
 
 public class MultiClient extends Client{
     public static void main(String[] args) {
         
     PublicKey pubKey;
-    BigInteger id;
-    String bidderName;
-    String bidderEmail;
     SignedMessage msg;
+    UserAccount acc = null;
 
     try {
     String nameServer = "myserver";
     Registry registry = LocateRegistry.getRegistry("localhost");
     IAuction server = (IAuction) registry.lookup(nameServer);
 
-    //pubKey = EncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der");
-    id = new BigInteger(24, new Random());
+    //pubKey = MessageEncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der");
     
     AuctionItem ai1 = new AuctionItem("Fancy vase", "A vase from the 18th century. Looks intricate.");
     AuctionItem ai2 = new AuctionItem("Spider-man Funko Pop", "An unopened funko pop. I guess someone will want it.");
@@ -35,30 +31,42 @@ public class MultiClient extends Client{
     int internalMenuChoice;
     LinkedList<String> options = new LinkedList<String>();
 
-    //clearConsole();
+    clearConsole();
 
-    // options.clear();
-    // options.add("Login");
-    // options.add("Create Account");
-    // externalMenuChoice = printCustomMenu(in, "LITTLE AUCTION APP", options);
-    // switch (externalMenuChoice) {
-    //     case 1:
-            
-    //         break;
-    
-    //     case 2:
-
-    //         break;
-    //     default:
-    //         break;
-    // }
+    do{
+        options.clear();
+        options.add("Log in");
+        options.add("Register");
+        externalMenuChoice = printCustomMenuWithQuit(in, "LITTLE AUCTION APP LOGIN", options);
+        switch (externalMenuChoice) {
+            case 1: // Login
+                acc = login(server, in);
+                if(acc == null){
+                    System.out.println("Failed to log in. Please try again");
+                } else {
+                    System.out.println("Login successfull. Welcome, " + acc.getName());
+                }
+                confirmUserProceed(in);
+                break;
+            case 2: // Register
+                if(register(server, in)){
+                    System.out.println("Account registered successfully. Please log in to enter the system.");
+                } else {
+                    System.out.println("Cannot register account. Please try again.");
+                }
+                confirmUserProceed(in);
+                break;
+            default:
+                break;
+        }
+    } while(acc == null);
 
     do {
         options.clear();
         options.add("All Available Items");
         options.add("All Open Auctions");
         options.add("Forward Auction");
-        externalMenuChoice = printCustomMenuWithQuit(in, "LITTLE AUCTION APP", options);
+        externalMenuChoice = printCustomMenuWithQuit(in, "little auction app", options);
         switch (externalMenuChoice) {
             
             case 1: // Available Items
@@ -93,9 +101,7 @@ public class MultiClient extends Client{
                 options.add("Place a Bid");
                 options.add("Open an Auction");
                 options.add("Close an Auction");
-
                 internalMenuChoice = printCustomMenu(in, "Forward Auction", options);
-
                 switch (internalMenuChoice) {
                     case 1: // List open forward auctions
                         System.out.println(customTitleToString("Open Forward Auctions"));
@@ -110,7 +116,6 @@ public class MultiClient extends Client{
                 
                     case 2: // Place a Bid
                         placeBid(auctionType, server, in);
-                        confirmUserProceed(in);
                         break;
                         
                     case 3: // Open an Auction
@@ -138,7 +143,6 @@ public class MultiClient extends Client{
                         
                     case 4: // Close an Auction
                         closeAuction(server, in);
-                        confirmUserProceed(in);
                         break;
                                                             
                     case 0: // Back
@@ -163,7 +167,7 @@ public class MultiClient extends Client{
 
     public static boolean verify(SignedMessage msg){
         try {
-            if(EncryptionHelper.verify(EncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der"), msg)){
+            if(MessageEncryptionHelper.verify(MessageEncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der"), msg)){
                 return true;
             }
         } catch (Exception e) {e.printStackTrace();}
@@ -180,7 +184,6 @@ public class MultiClient extends Client{
         clearConsole();
         return true;
     }
-    
     public static String customTitleToString(String title){
         String out = "---------------" + title + "---------------";
         out += "\n";
@@ -445,12 +448,46 @@ public class MultiClient extends Client{
             e.printStackTrace();
         }
     }
-    public static void printHashVerif(SignedMessage received, Serializable decrypted){
-        System.out.println(customTitleToString("Hash verification"));
-        String recHash = String.format("%02X", received.getHashedMessage());
-        System.out.println("Received hash digest: " + recHash);
-        String ogHash = String.format("%02X", EncryptionHelper.hashMessage(received.getMessage()));
-        System.out.println("Original message hash digest: " + ogHash);
-    }
+    public static UserAccount login(IAuction server, Scanner in){
+        System.out.println(customTitleToString("Log in"));
+        try{
+        System.out.println("Email");
+        printInputChar(); String email = in.nextLine();
+        System.out.println("Password");
+        printInputChar(); String pass = in.nextLine();
 
+        SignedMessage msg = server.login(email, pass);
+        if(verify(msg)){
+            return (UserAccount) msg.getMessage();
+        } else {
+            throw new SignatureException("Received message failed to verify");
+        }
+        } catch(Exception e){e.printStackTrace(); return null;}
+    }
+    public static boolean register(IAuction server, Scanner in){
+        System.out.println(customTitleToString("Register"));
+        try {
+            System.out.println("Name");
+            printInputChar(); String name = in.nextLine();
+            System.out.println("Email");
+            printInputChar(); String email = in.nextLine();
+            System.out.println("Password");
+            printInputChar(); String pass = in.nextLine();
+
+            SignedMessage msg = server.register(name, email, pass);
+            if(verify(msg)){
+                return (boolean) msg.getMessage();
+            } else {
+                throw new SignatureException("Received message failed to verify");
+            }
+        } catch (Exception e) {e.printStackTrace(); return false;}
+    }
+    
+    // public static void printHashVerif(SignedMessage received, Serializable decrypted){
+    //     System.out.println(customTitleToString("Hash verification"));
+    //     String recHash = String.format("%02X", received.getHashedMessage());
+    //     System.out.println("Received hash digest: " + recHash);
+    //     String ogHash = String.format("%02X", MessageEncryptionHelper.hashMessage(received.getMessage()));
+    //     System.out.println("Original message hash digest: " + ogHash);
+    // }
 }

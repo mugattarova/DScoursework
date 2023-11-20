@@ -8,7 +8,7 @@ import java.nio.file.*;
 import java.security.spec.*;
 import java.io.FileInputStream;
 
-public class EncryptionHelper {
+public class MessageEncryptionHelper {
         
     public static byte[] objectToByteArray(Serializable o){
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

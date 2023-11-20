@@ -10,11 +10,11 @@ public class SignedMessage implements Serializable{
         message = _message;
 
         try {
-            hashedMessage = EncryptionHelper.hashMessage(message);
+            hashedMessage = MessageEncryptionHelper.hashMessage(message);
 
             Signature sig = Signature.getInstance("SHA256withRSA");
             sig.initSign(privKey);
-            sig.update(EncryptionHelper.objectToByteArray(message));
+            sig.update(MessageEncryptionHelper.objectToByteArray(message));
             signature = sig.sign();
 
         } catch (Exception e) {
