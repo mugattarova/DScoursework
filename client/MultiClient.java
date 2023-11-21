@@ -98,7 +98,6 @@ public class MultiClient extends Client{
 
             case 3: // Forward Auction 
                 auctionType = "f";
-
                 options.clear();
                 options.add("List of Open Forward Auctions");
                 options.add("Place a Bid");
@@ -203,7 +202,40 @@ public class MultiClient extends Client{
                 break;
             
             case 5: // Double Auction
-                
+                auctionType = "d";
+                options.clear();
+                options.add("List of Open Double Auctions");
+                options.add("Place a Buy Request");
+                options.add("Place a Sell Request");
+                options.add("Open an Auction");
+                options.add("Close an Auction");
+                internalMenuChoice = printCustomMenu(in, "Double Auction", options);
+                switch (internalMenuChoice) {
+                    case 1: // list
+                        System.out.println(customTitleToString("All Open Auctions"));
+                        msg = server.openAuctionsToString(auctionType);
+                        if(verify(msg)){
+                            System.out.print((String)msg.getMessage());
+                        } else {
+                            throw new SignatureException("Received message failed to verify");
+                        }
+                        confirmUserProceed(in);
+                        break;
+                    case 2: // place a buy
+                        
+                        break;  
+                    case 3: // place a sell
+                        
+                        break;   
+                    case 4: //open auction
+                        
+                        break; 
+                    case 5: // close auction
+                        
+                        break;                        
+                    default:
+                        break;
+                }
                 break;
             default:
                 System.out.println("Invalid option");
@@ -627,11 +659,4 @@ public class MultiClient extends Client{
         } catch (Exception e) {e.printStackTrace(); return false;}
     }
     
-    // public static void printHashVerif(SignedMessage received, Serializable decrypted){
-    //     System.out.println(customTitleToString("Hash verification"));
-    //     String recHash = String.format("%02X", received.getHashedMessage());
-    //     System.out.println("Received hash digest: " + recHash);
-    //     String ogHash = String.format("%02X", MessageEncryptionHelper.hashMessage(received.getMessage()));
-    //     System.out.println("Original message hash digest: " + ogHash);
-    // }
 }

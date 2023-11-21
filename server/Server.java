@@ -73,7 +73,13 @@ public class Server implements IAuction{
     public SignedMessage createReverseAuction(UserAccount owner, AuctionItem aui) throws RemoteException{
         ReverseAuction newAu = new ReverseAuction(owner, aui);
         openAuctions.put(newAu.getAuctionID(), newAu);
-        System.out.println("New reverse auction created, id "+newAu.getAuctionID());
+        System.out.println("New reverse auction created, id " + newAu.getAuctionID());
+        return new SignedMessage(newAu.getAuctionID(), privKey);
+    }
+    public SignedMessage createDoubleAuction(UserAccount owner, AuctionItem aui) throws RemoteException{
+        DoubleAuction newAu = new DoubleAuction(owner, aui);
+        openAuctions.put(newAu.getAuctionID(), newAu);
+        System.out.println("New double auction created, id " + newAu.getAuctionID());
         return new SignedMessage(newAu.getAuctionID(), privKey);
     }
     public SignedMessage closeAuction(UserAccount acc, int auctionID) throws RemoteException {
@@ -91,53 +97,79 @@ public class Server implements IAuction{
             return new SignedMessage("Cannot close auction, id " + auctionID, privKey);
         } 
     }
-    public SignedMessage submitBid(UserAccount acc, String auctionType, int auctionID, Bid bid) throws RemoteException{
-        try {
-            switch (auctionType) {
-                case "f":
-                    try{
-                        ForwardAuction forwAuction = (ForwardAuction) openAuctions.get(auctionID);
-                        if(forwAuction == null){
-                            return new SignedMessage("Auction not found. Bid was not successful.", privKey);
-                        } else {
-                            if(forwAuction.placeBid(acc, bid)){
-                                System.out.println("Successful bid " + bid.getSum() + " at auction " + forwAuction.getAuctionID());
-                                return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
-                            } else {
-                                System.out.println("Failed bid " + bid.getSum() + " at auction " + forwAuction.getAuctionID());
-                                return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful. Bid a higher amount.", privKey);
-                            }
-                        }
-                    } catch (Exception e) {
-                        return new SignedMessage("Bid is unsuccessful.", privKey);
-                    }
-                case "r":
-                    try{
-                        ReverseAuction revAuction = (ReverseAuction) openAuctions.get(auctionID);
-                        if(revAuction == null){
-                            return new SignedMessage("Auction not found. Bid was not successful.", privKey);
-                        } else {
-                                if(revAuction.placeBid(acc, bid)){
-                                    System.out.println("Successful bid " + bid.getSum() + " at auction " + revAuction.getAuctionID());
-                                    return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
-                                } else {
-                                    System.out.println("Failed bid " + bid.getSum() + " at auction " + revAuction.getAuctionID());
-                                    return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful", privKey);
-                                }
-                        }
-                    } catch (Exception e) {
-                        return new SignedMessage("Bid is unsuccessful.", privKey);
-                    }
-                    
-                case "d":
-                    break;
-                default:
-                    break;
+    public SignedMessage submitForwAucBid(UserAccount acc, int auctionID, Bid bid) throws RemoteException{
+        try{
+            ForwardAuction forwAuction = (ForwardAuction) openAuctions.get(auctionID);
+            if(forwAuction == null){
+                return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+            } else {
+                if(forwAuction.placeBid(acc, bid)){
+                    System.out.println("Successful bid " + bid.getSum() + " at auction " + forwAuction.getAuctionID());
+                    return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
+                } else {
+                    System.out.println("Failed bid " + bid.getSum() + " at auction " + forwAuction.getAuctionID());
+                    return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful. Bid a higher amount.", privKey);
+                }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            return new SignedMessage("Bid was unsuccessful.", privKey);
         }
-        return new SignedMessage("", privKey);
+    }
+    public SignedMessage submitRevAucBid(UserAccount acc, int auctionID, Bid bid){
+        try{
+            ReverseAuction revAuction = (ReverseAuction) openAuctions.get(auctionID);
+            if(revAuction == null){
+                return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+            } else {
+                if(revAuction.placeBid(acc, bid)){
+                    System.out.println("Successful bid " + bid.getSum() + " at auction " + revAuction.getAuctionID());
+                    return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
+                } else {
+                    System.out.println("Failed bid " + bid.getSum() + " at auction " + revAuction.getAuctionID());
+                    return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful", privKey);
+                }
+            }
+        } catch (Exception e) {
+            return new SignedMessage("Bid was unsuccessful.", privKey);
+        }
+    }
+    public SignedMessage submitDoubleAucSell(UserAccount acc, int auctionID, Bid bid){
+        try {
+            DoubleAuction doubAuction = (DoubleAuction) openAuctions.get(auctionID);
+            if(doubAuction == null){
+                return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+            } else {
+                if(doubAuction.placeSell(bid)){
+                    System.out.println("Successful sell request " + bid.getSum() + " at auction " + doubAuction.getAuctionID());
+                    return new SignedMessage("Sell request " + bid.getSum() + " was placed successfully.", privKey);
+                } else {
+                    System.out.println("Failed sell request " + bid.getSum() + " at auction " + doubAuction.getAuctionID());
+                    return new SignedMessage("Sell request " + bid.getSum() + " was unsuccessful", privKey);
+                }
+            }
+            
+        } catch (Exception e) {
+            return new SignedMessage("Sell request was uncsuccessful", privKey);
+        }
+    }
+    public SignedMessage submitDoubleAucBuy(UserAccount acc, int auctionID, Bid bid){
+        try {
+            DoubleAuction doubAuction = (DoubleAuction) openAuctions.get(auctionID);
+            if(doubAuction == null){
+                return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+            } else {
+                if(doubAuction.placeBuy(bid)){
+                    System.out.println("Successful buy request " + bid.getSum() + " at auction " + doubAuction.getAuctionID());
+                    return new SignedMessage("Buy request " + bid.getSum() + " was placed successfully.", privKey);
+                } else {
+                    System.out.println("Failed buy request " + bid.getSum() + " at auction " + doubAuction.getAuctionID());
+                    return new SignedMessage("Buy request " + bid.getSum() + " was unsuccessful", privKey);
+                }
+            }
+            
+        } catch (Exception e) {
+            return new SignedMessage("Buy request was uncsuccessful", privKey);
+        }
     }
     public SignedMessage openAuctionsToString(String auctionType) throws RemoteException{
         String out = "";

@@ -1,9 +1,9 @@
 import java.io.Serializable;
 
 public abstract class Auction implements Serializable{
+    private static int auctionIDCount = 0;
 
     UserAccount owner;
-    private static int auctionIDCount = 0;
     protected int auctionID;
     protected AuctionItem auctionItem;
     protected boolean isClosed;
