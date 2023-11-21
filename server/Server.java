@@ -27,6 +27,8 @@ public class Server implements IAuction{
             register("Nellie", "cool@email.com", "coolgirlie");
             register("Vince", "curly@email.com", "boy");
             register("Tom", "worm@worm.com", "wrinkly");
+            register("Bingus", "p", "p");
+            register("Girlie", "l", "l");
         } catch (Exception e) {e.printStackTrace();}
     }
 
@@ -57,17 +59,21 @@ public class Server implements IAuction{
     }
     public void storeAuctionItem(AuctionItem aui) throws RemoteException{
         auctionItems.put(aui.getItemId(), aui);
-        System.out.println("New item stored, id " + aui.getItemId());
     }
     public void storeAuctionItem(String _itemTitle, String _itemDescription) throws RemoteException{
         AuctionItem newItem = new AuctionItem(_itemTitle, _itemDescription);
         auctionItems.put(newItem.getItemId(), newItem);
-        System.out.println("New item stored, id " + newItem.getItemId());
     }
     public SignedMessage createForwardAuction(UserAccount owner, AuctionItem aui, float startingPrice, float reservePrice) throws RemoteException {
         ForwardAuction newAu = new ForwardAuction(owner, aui, startingPrice, reservePrice);
         openAuctions.put(newAu.getAuctionID(), newAu);
-        System.out.println("New auction created, id " + newAu.getAuctionID());
+        System.out.println("New forward auction created, id " + newAu.getAuctionID());
+        return new SignedMessage(newAu.getAuctionID(), privKey);
+    }
+    public SignedMessage createReverseAuction(UserAccount owner, AuctionItem aui) throws RemoteException{
+        ReverseAuction newAu = new ReverseAuction(owner, aui);
+        openAuctions.put(newAu.getAuctionID(), newAu);
+        System.out.println("New reverse auction created, id "+newAu.getAuctionID());
         return new SignedMessage(newAu.getAuctionID(), privKey);
     }
     public SignedMessage closeAuction(UserAccount acc, int auctionID) throws RemoteException {
@@ -85,31 +91,45 @@ public class Server implements IAuction{
             return new SignedMessage("Cannot close auction, id " + auctionID, privKey);
         } 
     }
-    public SignedMessage submitBid(UserAccount acc, String type, int auctionID, Bid bid) throws RemoteException{
+    public SignedMessage submitBid(UserAccount acc, String auctionType, int auctionID, Bid bid) throws RemoteException{
         try {
-            switch (type) {
+            switch (auctionType) {
                 case "f":
-                    ForwardAuction auction = (ForwardAuction) openAuctions.get(auctionID);
-                    if(auction == null){
-                        return new SignedMessage("Auction not found. Bid was not successful.", privKey);
-                    } else {
-                        try{
-                            if(auction.placeBid(acc, bid)){
-                                System.out.println("Successful bid " + bid.getSum() + " at auction " + auction.getAuctionID());
+                    try{
+                        ForwardAuction forwAuction = (ForwardAuction) openAuctions.get(auctionID);
+                        if(forwAuction == null){
+                            return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+                        } else {
+                            if(forwAuction.placeBid(acc, bid)){
+                                System.out.println("Successful bid " + bid.getSum() + " at auction " + forwAuction.getAuctionID());
                                 return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
                             } else {
-                                System.out.println("Failed bid " + bid.getSum() + " at auction " + auction.getAuctionID());
+                                System.out.println("Failed bid " + bid.getSum() + " at auction " + forwAuction.getAuctionID());
                                 return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful. Bid a higher amount.", privKey);
                             }
-                        } catch (InvalidBidException e) {
-                            return new SignedMessage("Bid unsuccessful. You cannot bid on your own auction.", privKey);
-
                         }
+                    } catch (Exception e) {
+                        return new SignedMessage("Bid is unsuccessful.", privKey);
                     }
-                case "d":
-                    break;
-
                 case "r":
+                    try{
+                        ReverseAuction revAuction = (ReverseAuction) openAuctions.get(auctionID);
+                        if(revAuction == null){
+                            return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+                        } else {
+                                if(revAuction.placeBid(acc, bid)){
+                                    System.out.println("Successful bid " + bid.getSum() + " at auction " + revAuction.getAuctionID());
+                                    return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
+                                } else {
+                                    System.out.println("Failed bid " + bid.getSum() + " at auction " + revAuction.getAuctionID());
+                                    return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful", privKey);
+                                }
+                        }
+                    } catch (Exception e) {
+                        return new SignedMessage("Bid is unsuccessful.", privKey);
+                    }
+                    
+                case "d":
                     break;
                 default:
                     break;
@@ -119,11 +139,32 @@ public class Server implements IAuction{
         }
         return new SignedMessage("", privKey);
     }
-    public SignedMessage openAuctionsToString() throws RemoteException{
+    public SignedMessage openAuctionsToString(String auctionType) throws RemoteException{
         String out = "";
         Enumeration<Auction> list = openAuctions.elements();
+        Auction curElem;
+
         while(list.hasMoreElements()){
-            out += list.nextElement().infoToString();
+            curElem = list.nextElement();
+            switch (auctionType) {
+                case "f":
+                    if(curElem instanceof ForwardAuction){
+                        out += curElem.infoToString();
+                    }
+                    break;
+                case "r":
+                    if(curElem instanceof ReverseAuction){
+                        out += curElem.infoToString();
+                    }
+                    break;
+                case "d":
+                    // TODO after double auction
+                    break;
+                case "all":
+                    out +=curElem.infoToStringWithTypeString();
+                default:
+                    break;
+                }
             out += "\n";
         }
         return new SignedMessage(out, privKey);
@@ -174,14 +215,5 @@ public class Server implements IAuction{
             return new SignedMessage(null, privKey);
         }
     }
-
-    /*public boolean createAccount(UserAccount acc, PublicKey pub) throws RemoteException{
-        if(accounts.get(email) == null){
-            UserAccount acc = new UserAccount(0, name, email);
-            accounts.put(email, acc);
-            return true;
-        } 
-        return false;
-    }*/
 
 }

@@ -21,7 +21,7 @@ public abstract class Auction implements Serializable{
     public String infoToStringWithTypeString(){
         return null;
     }
-    public String closeAuction(UserAccount acc) throws PermissionDeniedException{
+    public String closeAuction(UserAccount acc){
         return null;
     }
 
