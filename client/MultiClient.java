@@ -2,14 +2,12 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
-import java.io.Serializable;
 import java.security.*;
-import java.math.BigInteger;
 
 public class MultiClient extends Client{
     public static void main(String[] args) {
         
-    PublicKey pubKey;
+    //PublicKey pubKey;
     SignedMessage msg;
     UserAccount acc = null;
 
@@ -20,12 +18,6 @@ public class MultiClient extends Client{
 
     //pubKey = MessageEncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der");
     
-    AuctionItem ai1 = new AuctionItem("Fancy vase", "A vase from the 18th century. Looks intricate.");
-    AuctionItem ai2 = new AuctionItem("Spider-man Funko Pop", "An unopened funko pop. I guess someone will want it.");
-    AuctionItem ai3 = new AuctionItem("Old horseshoe", "It is said to bring a lot of luck.");
-    server.storeAuctionItem(ai1); server.storeAuctionItem(ai2); server.storeAuctionItem(ai3);
-    server.createAuction(ai1, 400, 500); server.createAuction(ai2, 100, 50); server.createAuction(ai3, 950, 400);
-
     Scanner in = new Scanner(System.in);
     int externalMenuChoice = 0;
     int internalMenuChoice;
@@ -33,7 +25,7 @@ public class MultiClient extends Client{
 
     clearConsole();
 
-    do{
+    do{ // Login menu
         options.clear();
         options.add("Log in");
         options.add("Register");
@@ -61,7 +53,13 @@ public class MultiClient extends Client{
         }
     } while(acc == null);
 
-    do {
+    AuctionItem ai1 = new AuctionItem("Fancy vase", "A vase from the 18th century. Looks intricate.");
+    AuctionItem ai2 = new AuctionItem("Spider-man Funko Pop", "An unopened funko pop. I guess someone will want it.");
+    AuctionItem ai3 = new AuctionItem("Old horseshoe", "It is said to bring a lot of luck.");
+    server.storeAuctionItem(ai1); server.storeAuctionItem(ai2); server.storeAuctionItem(ai3);
+    server.createForwardAuction(acc, ai1, 400, 500); server.createForwardAuction(acc, ai2, 100, 50); server.createForwardAuction(acc, ai3, 950, 400);
+
+    do{ // Main Menu
         options.clear();
         options.add("All Available Items");
         options.add("All Open Auctions");
@@ -115,7 +113,7 @@ public class MultiClient extends Client{
                         break;
                 
                     case 2: // Place a Bid
-                        placeBid(auctionType, server, in);
+                        placeBid(acc, auctionType, server, in);
                         break;
                         
                     case 3: // Open an Auction
@@ -126,11 +124,11 @@ public class MultiClient extends Client{
                         internalMenuChoice = printCustomMenu(in, "Open an Auction", options);
                         switch (internalMenuChoice) {
                             case 1: // For a new item
-                                openAucNewItem(server, in);
+                                openAucNewItem(acc, server, in);
                                 break;
 
                             case 2: // For an existing item
-                                openAucExistItem(server, in);
+                                openAucExistItem(acc, server, in);
                                 break;
 
                             case 0:
@@ -142,7 +140,7 @@ public class MultiClient extends Client{
                         break;
                         
                     case 4: // Close an Auction
-                        closeAuction(server, in);
+                        closeAuction(acc, server, in);
                         break;
                                                             
                     case 0: // Back
@@ -241,7 +239,7 @@ public class MultiClient extends Client{
         return out;
     }
 
-    public static void openAucNewItem(IAuction server, Scanner in){
+    public static void openAucNewItem(UserAccount acc, IAuction server, Scanner in){
         
         AuctionItem newItem;
         String newItemTitle;
@@ -263,7 +261,7 @@ public class MultiClient extends Client{
 
             newItem = new AuctionItem(newItemTitle, newItemDescription);
             server.storeAuctionItem(newItem);
-            server.createAuction(newItem, startingPrice, reservePrice);
+            server.createForwardAuction(acc, newItem, startingPrice, reservePrice);
 
             clearConsole();
             System.out.println(customTitleToString("New Item Added"));
@@ -277,7 +275,7 @@ public class MultiClient extends Client{
             e.printStackTrace();
         }
     } 
-    public static void openAucExistItem(IAuction server, Scanner in){
+    public static void openAucExistItem(UserAccount acc, IAuction server, Scanner in){
         
         SignedMessage msg;
         AuctionItem item;
@@ -328,7 +326,7 @@ public class MultiClient extends Client{
                 System.out.println("Reserve price");
                 printInputChar(); reservePrice = in.nextFloat();
 
-                msg = server.createAuction(item, startingPrice, reservePrice);
+                msg = server.createForwardAuction(acc, item, startingPrice, reservePrice);
                 if(verify(msg)){
                     auctionID = (int) msg.getMessage();
                 } else {
@@ -353,10 +351,9 @@ public class MultiClient extends Client{
             }
         } while(stayInMenu);
     } 
-    public static void closeAuction(IAuction server, Scanner in) throws SignatureException{
+    public static void closeAuction(UserAccount acc, IAuction server, Scanner in) throws SignatureException{
         int auctionID;
         Auction closedAu;
-        AuCloseOutcome outcome;
         SignedMessage msg;
 
         try {
@@ -373,48 +370,22 @@ public class MultiClient extends Client{
             msg = server.getAuction(auctionID);          
             if(verify(msg)){
                 closedAu = (Auction) msg.getMessage();
+                msg = server.closeAuction(acc, closedAu.getAuctionID());
+                if(verify(msg)){
+                    System.out.print((String)msg.getMessage());
+                } else {
+                    throw new SignatureException("Received message failed to verify");
+                }
             } else {
                 throw new SignatureException("Received message failed to verify");
             }
-
-            msg = server.closeAuction(auctionID);
-            if(verify(msg)){
-                outcome = (AuCloseOutcome) msg.getMessage();
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-            switch (outcome) {
-                case Sold:
-                    System.out.println("Auction item sold!");
-                    System.out.print(closedAu.getWinnerBid().infoToString());
-                    break;
-                
-                case NoBids:
-                    System.out.println("No bids were placed. The item was not sold.");
-                    break;
-
-                case ReserveNotMet:
-                    System.out.println("Reserve price was not met. The item was not sold.");
-                    break;
-
-                case NoClosePermission:
-                    System.out.println("You have no permission to close this auction.");
-                    break;
-
-                case DoesNotExist:
-                    System.out.println("Auction ID is invalid.");
-                    break;
-                default:
-                    break;
-            }
-
             confirmUserProceed(in);
 
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
-    public static void placeBid(String aucType, IAuction server, Scanner in) throws SignatureException{
+    public static void placeBid(UserAccount acc, String aucType, IAuction server, Scanner in) throws SignatureException{
         int auctionID;
         float bidPrice;
         String output;
@@ -434,8 +405,7 @@ public class MultiClient extends Client{
             System.out.println("Enter the bid amount");
             printInputChar();
             bidPrice = in.nextFloat();
-            //TODO after accounts are implemented
-            msg = server.submitBid(auctionID,  new Bid(bidPrice, "Nellie", "cool@email.com"));
+            msg = server.submitBid(acc, aucType, auctionID, new Bid(bidPrice, acc.getName(), acc.getEmail()));
             if(verify(msg)){
                 output = (String) msg.getMessage();
             } else {
@@ -458,7 +428,8 @@ public class MultiClient extends Client{
 
         SignedMessage msg = server.login(email, pass);
         if(verify(msg)){
-            return (UserAccount) msg.getMessage();
+            UserAccount acc = (UserAccount) msg.getMessage();
+            return acc;
         } else {
             throw new SignatureException("Received message failed to verify");
         }

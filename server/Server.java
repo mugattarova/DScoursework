@@ -23,6 +23,11 @@ public class Server implements IAuction{
         passwordSalt = new Hashtable<String, String>();
         accounts = new Hashtable<String, UserAccount>();
         privKey = MessageEncryptionHelper.getPrivKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/server/private_key.der");
+        try{
+            register("Nellie", "cool@email.com", "coolgirlie");
+            register("Vince", "curly@email.com", "boy");
+            register("Tom", "worm@worm.com", "wrinkly");
+        } catch (Exception e) {e.printStackTrace();}
     }
 
     public static void main(String[] args) {
@@ -38,14 +43,6 @@ public class Server implements IAuction{
         } catch (Exception e) {
             System.err.println("Exception:");
             e.printStackTrace();
-        }
-    }
-    
-    public AuctionItem getSpec(int itemId, int clientId) throws RemoteException {
-        try {
-            return auctionItems.get(itemId);
-        } catch (Exception e) {
-            return null;
         }
     }
 
@@ -67,41 +64,55 @@ public class Server implements IAuction{
         auctionItems.put(newItem.getItemId(), newItem);
         System.out.println("New item stored, id " + newItem.getItemId());
     }
-    public SignedMessage createAuction(AuctionItem aui, float startingPrice, float reservePrice) throws RemoteException {
-        Auction newAu = new Auction(aui, startingPrice, reservePrice);
+    public SignedMessage createForwardAuction(UserAccount owner, AuctionItem aui, float startingPrice, float reservePrice) throws RemoteException {
+        ForwardAuction newAu = new ForwardAuction(owner, aui, startingPrice, reservePrice);
         openAuctions.put(newAu.getAuctionID(), newAu);
         System.out.println("New auction created, id " + newAu.getAuctionID());
         return new SignedMessage(newAu.getAuctionID(), privKey);
     }
-    public SignedMessage closeAuction(int auctionID) throws RemoteException {
+    public SignedMessage closeAuction(UserAccount acc, int auctionID) throws RemoteException {
         try {
-            Auction au = openAuctions.remove(auctionID);
-            System.out.println("Auction closed, id " + au.getAuctionID());
-            if(!au.hasBids()){
-                return new SignedMessage(AuCloseOutcome.NoBids, privKey);
-            } else if(!au.isReserveMet()) {
-                return new SignedMessage(AuCloseOutcome.ReserveNotMet, privKey);
-            } else {
-                return new SignedMessage(AuCloseOutcome.Sold, privKey);
+            // check if has permission
+            Auction au = openAuctions.get(auctionID);
+            if(au.verifyUser(acc)){
+                openAuctions.remove(auctionID);
+                System.out.println("Auction closed, id " + au.getAuctionID());
             }
+            String msg = au.closeAuction(acc);
+            return new SignedMessage(msg, privKey);
         } catch (Exception e) {
             System.out.println("Cannot close auction, id " + auctionID);
-            return new SignedMessage(AuCloseOutcome.DoesNotExist, privKey);
-        }
+            return new SignedMessage("Cannot close auction, id " + auctionID, privKey);
+        } 
     }
-    public SignedMessage submitBid(int auctionID, Bid bid) throws RemoteException{
+    public SignedMessage submitBid(UserAccount acc, String type, int auctionID, Bid bid) throws RemoteException{
         try {
-            Auction auction = openAuctions.get(auctionID);
-            if(auction == null){
-                return new SignedMessage("Auction not found. Bid was not successful.", privKey);
-            } else {
-                if(auction.placeBid(bid)){
-                    System.out.println("Successful bid " + bid.getSum() + " at auction " + auction.getAuctionID());
-                    return new SignedMessage("Bid " +bid.getSum()+ " was placed successfully.", privKey);
-                } else {
-                    System.out.println("Failed bid " + bid.getSum() + " at auction " + auction.getAuctionID());
-                    return new SignedMessage("Bid " +bid.getSum()+ " was unsuccessful. Bid a higher amount.", privKey);
-                }
+            switch (type) {
+                case "f":
+                    ForwardAuction auction = (ForwardAuction) openAuctions.get(auctionID);
+                    if(auction == null){
+                        return new SignedMessage("Auction not found. Bid was not successful.", privKey);
+                    } else {
+                        try{
+                            if(auction.placeBid(acc, bid)){
+                                System.out.println("Successful bid " + bid.getSum() + " at auction " + auction.getAuctionID());
+                                return new SignedMessage("Bid " + bid.getSum() + " was placed successfully.", privKey);
+                            } else {
+                                System.out.println("Failed bid " + bid.getSum() + " at auction " + auction.getAuctionID());
+                                return new SignedMessage("Bid " + bid.getSum() + " was unsuccessful. Bid a higher amount.", privKey);
+                            }
+                        } catch (InvalidBidException e) {
+                            return new SignedMessage("Bid unsuccessful. You cannot bid on your own auction.", privKey);
+
+                        }
+                    }
+                case "d":
+                    break;
+
+                case "r":
+                    break;
+                default:
+                    break;
             }
         } catch (Exception e) {
             e.printStackTrace();
