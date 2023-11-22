@@ -35,21 +35,25 @@ public class DoubleAuction extends Auction{
     public String closeAuction(UserAccount acc){
         isClosed = true;
         String out = "";
-        if(sellers.size() == 0 || buyers.size() == 0){
-            return "Auction closed successfully. No matches were made.";
+        if(verifyUser(acc)){
+            if(sellers.size() == 0 || buyers.size() == 0){
+                return "Auction closed successfully. No matches were made.";
+            }
+            Collections.sort(sellers, new SortBySum());
+            Collections.reverse(sellers);
+            Collections.sort(buyers, new SortBySum());
+            Collections.reverse(buyers);
+            out += "-Item on sale-\n";
+            out += auctionItem.infoToString();
+            for(int i=0; i < Math.min(sellers.size(), buyers.size()); i++){
+                if((buyers.get(i).getSum() - sellers.get(i).getSum()) >= 0){
+                    out += bidPairToString(sellers.get(i), buyers.get(i));
+                }
+            }
+            return out;
+        } else {
+            return "You can't close this auction.";
         }
-
-        Collections.sort(sellers, new SortBySum());
-        Collections.reverse(sellers);
-        Collections.sort(buyers, new SortBySum());
-        out += "-Item on sale-\n";
-        out += auctionItem.infoToString();
-        for(int i=0; i < Math.min(sellers.size(), buyers.size()); i++){
-            out += bidPairToString(sellers.get(i), buyers.get(i));
-        }
-        
-        return out;
-
     }
 
     public boolean placeSell(Bid bid){

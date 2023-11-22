@@ -24,11 +24,20 @@ public class Server implements IAuction{
         accounts = new Hashtable<String, UserAccount>();
         privKey = MessageEncryptionHelper.getPrivKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/server/private_key.der");
         try{
-            register("Nellie", "cool@email.com", "coolgirlie");
-            register("Vince", "curly@email.com", "boy");
-            register("Tom", "worm@worm.com", "wrinkly");
             register("Bingus", "p", "p");
             register("Girlie", "l", "l");
+            register("b1", "b1", "b1");
+            register("b2", "b2", "b2");
+            register("b3", "b3", "b3");
+            register("s1", "s1", "s1");
+            register("s2", "s2", "s2");
+            register("s3", "s3", "s3");
+
+            AuctionItem ai1 = new AuctionItem("Fancy vase", "A vase from the 18th century. Looks intricate.");
+            AuctionItem ai2 = new AuctionItem("Spider-man Funko Pop", "An unopened funko pop. I guess someone will want it.");
+            AuctionItem ai3 = new AuctionItem("Old horseshoe", "It is said to bring a lot of luck.");
+            storeAuctionItem(ai1); storeAuctionItem(ai2); storeAuctionItem(ai3);
+        
         } catch (Exception e) {e.printStackTrace();}
     }
 
@@ -115,7 +124,7 @@ public class Server implements IAuction{
             return new SignedMessage("Bid was unsuccessful.", privKey);
         }
     }
-    public SignedMessage submitRevAucBid(UserAccount acc, int auctionID, Bid bid){
+    public SignedMessage submitRevAucBid(UserAccount acc, int auctionID, Bid bid) throws RemoteException{
         try{
             ReverseAuction revAuction = (ReverseAuction) openAuctions.get(auctionID);
             if(revAuction == null){
@@ -133,7 +142,7 @@ public class Server implements IAuction{
             return new SignedMessage("Bid was unsuccessful.", privKey);
         }
     }
-    public SignedMessage submitDoubleAucSell(UserAccount acc, int auctionID, Bid bid){
+    public SignedMessage submitDoubleAucSell(UserAccount acc, int auctionID, Bid bid) throws RemoteException{
         try {
             DoubleAuction doubAuction = (DoubleAuction) openAuctions.get(auctionID);
             if(doubAuction == null){
@@ -152,7 +161,7 @@ public class Server implements IAuction{
             return new SignedMessage("Sell request was uncsuccessful", privKey);
         }
     }
-    public SignedMessage submitDoubleAucBuy(UserAccount acc, int auctionID, Bid bid){
+    public SignedMessage submitDoubleAucBuy(UserAccount acc, int auctionID, Bid bid) throws RemoteException{
         try {
             DoubleAuction doubAuction = (DoubleAuction) openAuctions.get(auctionID);
             if(doubAuction == null){
@@ -181,23 +190,24 @@ public class Server implements IAuction{
             switch (auctionType) {
                 case "f":
                     if(curElem instanceof ForwardAuction){
-                        out += curElem.infoToString();
+                        out += curElem.infoToString() + "\n";
                     }
                     break;
                 case "r":
                     if(curElem instanceof ReverseAuction){
-                        out += curElem.infoToString();
+                        out += curElem.infoToString() + "\n";
                     }
                     break;
                 case "d":
-                    // TODO after double auction
+                    if(curElem instanceof DoubleAuction){
+                        out += curElem.infoToString() + "\n";
+                    }
                     break;
                 case "all":
-                    out +=curElem.infoToStringWithTypeString();
+                    out +=curElem.infoToStringWithTypeString() + "\n";
                 default:
                     break;
                 }
-            out += "\n";
         }
         return new SignedMessage(out, privKey);
     }
