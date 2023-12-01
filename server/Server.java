@@ -4,12 +4,12 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Enumeration;
 import java.util.Hashtable;
+
 import java.util.Base64;
 import java.security.*;
 
 public class Server implements IAuction{
     private PrivateKey privKey;
-
     private Hashtable<Integer, AuctionItem> auctionItems;
     private Hashtable<Integer, Auction> openAuctions;
     // email - salt
