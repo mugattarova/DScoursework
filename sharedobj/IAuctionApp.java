@@ -1,7 +1,7 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface IAuction extends Remote{
+public interface IAuctionApp extends Remote{
 
     public SignedMessage getItemInfo(int itemID) throws RemoteException;
     public SignedMessage getAuctionInfo(int auctionID) throws RemoteException;

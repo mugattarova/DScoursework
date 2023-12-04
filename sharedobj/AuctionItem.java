@@ -1,3 +1,4 @@
+
 import java.io.Serializable;
 
 public class AuctionItem implements Serializable{

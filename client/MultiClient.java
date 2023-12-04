@@ -4,49 +4,51 @@ import java.rmi.registry.Registry;
 import java.util.*;
 import java.security.*;
 
-public class MultiClient extends Client{
+public class MultiClient{
+    private static UserAccount acc;
+    private static IAuctionApp server;
+    private static InputHandler in;
+
+    public MultiClient(){
+        acc = null;
+        in = InputHandler.getInstance();
+    }
     public static void main(String[] args) {
-        
-    //PublicKey pubKey;
-    SignedMessage msg;
-    UserAccount acc = null;
+
+    new MultiClient();
 
     try {
     String nameServer = "myserver";
     Registry registry = LocateRegistry.getRegistry("localhost");
-    IAuction server = (IAuction) registry.lookup(nameServer);
+    server = (IAuctionApp) registry.lookup(nameServer);
 
-    //pubKey = MessageEncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der");
-    
-    Scanner in = new Scanner(System.in);
     int externalMenuChoice = 0;
     int internalMenuChoice;
     LinkedList<String> options = new LinkedList<String>();
 
-    clearConsole();
-
+    in.clearConsole();
     do{ // Login menu
         options.clear();
         options.add("Log in");
         options.add("Register");
-        externalMenuChoice = printCustomMenuWithQuit(in, "LITTLE AUCTION APP LOGIN", options);
+        externalMenuChoice = printCustomMenuWithQuit("LITTLE AUCTION APP LOGIN", options);
         switch (externalMenuChoice) {
             case 1: // Login
-                acc = login(server, in);
+                acc = login();
                 if(acc == null){
                     System.out.println("Failed to log in. Please try again");
                 } else {
                     System.out.println("Login successfull. Welcome, " + acc.getName());
                 }
-                confirmUserProceed(in);
+                in.confirmUserProceed();
                 break;
             case 2: // Register
-                if(register(server, in)){
+                if(register()){
                     System.out.println("Account registered successfully. Please log in to enter the system.");
                 } else {
                     System.out.println("Cannot register account. Please try again.");
                 }
-                confirmUserProceed(in);
+                in.confirmUserProceed();
                 break;
             default:
                 break;
@@ -66,31 +68,19 @@ public class MultiClient extends Client{
         options.add("Forward Auction");
         options.add("Reverse Auction");
         options.add("Double Auction");
-        externalMenuChoice = printCustomMenuWithQuit(in, "little auction app", options);
+        externalMenuChoice = printCustomMenuWithQuit("little auction app", options);
         switch (externalMenuChoice) {
             
             case 1: // Available Items
-                
                 System.out.println(customTitleToString("Available Items"));
-                msg = server.availableItemsToString();
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-                confirmUserProceed(in);
+                System.out.print((String) getVerifiedMessage(server.availableItemsToString()));
+                in.confirmUserProceed();
                 break;
                 
             case 2: // All Open Auctions
-
                 System.out.println(customTitleToString("All Open Auctions"));
-                msg = server.openAuctionsToString("all");
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-                confirmUserProceed(in);
+                System.out.print((String) getVerifiedMessage(server.openAuctionsToString("all")));
+                in.confirmUserProceed();
                 break;
 
             case 3: // Forward Auction 
@@ -100,35 +90,29 @@ public class MultiClient extends Client{
                 options.add("Place a Bid");
                 options.add("Open an Auction");
                 options.add("Close an Auction");
-                internalMenuChoice = printCustomMenu(in, "Forward Auction", options);
+                internalMenuChoice = printCustomMenu("Forward Auction", options);
                 switch (internalMenuChoice) {
                     case 1: // List open forward auctions
                         System.out.println(customTitleToString("Open Forward Auctions"));
-                        msg = server.openAuctionsToString(auctionType);
-                        if(verify(msg)){
-                            System.out.print((String)msg.getMessage());
-                        } else {
-                            throw new SignatureException("Received message failed to verify");
-                        }
-                        confirmUserProceed(in);
+                        System.out.print((String) getVerifiedMessage(server.openAuctionsToString(auctionType)));
+                        in.confirmUserProceed();
                         break;
                 
                     case 2: // Place a Bid
-                        placeBid(auctionType, acc, server, in);
+                        placeBid(auctionType);
                         break;
                         
                     case 3: // Open an Auction
                         options.clear();
                         options.add("For a new item");
                         options.add("For an existing item");
-                        
-                        internalMenuChoice = printCustomMenu(in, "Open an Auction", options);
+                        internalMenuChoice = printCustomMenu("Open an Auction", options);
                         switch (internalMenuChoice) {
                             case 1: // For a new item
-                                openForwAucNewItem(acc, server, in);
+                                openForwAucNewItem();
                                 break;
                             case 2: // For an existing item
-                                openForwAucExistItem(acc, server, in);
+                                openForwAucExistItem();
                                 break;
                             case 0:
                                 continue;
@@ -138,11 +122,10 @@ public class MultiClient extends Client{
                         break;
                         
                     case 4: // Close an Auction
-                        closeAuction(auctionType, acc, server, in);
+                        closeAuction(auctionType);
                         break;
                                                             
                     case 0: // Back
-                        
                         continue;                                   
                     default:
                         break;
@@ -156,33 +139,28 @@ public class MultiClient extends Client{
                 options.add("Place a Bid");
                 options.add("Open an Auction");
                 options.add("Close an Auction");
-                internalMenuChoice = printCustomMenu(in, "Reverse Auction", options);
+                internalMenuChoice = printCustomMenu("Reverse Auction", options);
                 switch (internalMenuChoice) {
                     case 1: // List Reverse Auctions
                         System.out.println(customTitleToString("Open Reverse Auctions"));
                         server.openAuctionsToString(auctionType);
-                        msg = server.openAuctionsToString(auctionType);
-                        if(verify(msg)){
-                            System.out.print((String)msg.getMessage());
-                        } else {
-                            throw new SignatureException("Received message failed to verify");
-                        }
-                        confirmUserProceed(in);
+                        System.out.print((String) getVerifiedMessage(server.openAuctionsToString(auctionType)));
+                        in.confirmUserProceed();
                         break;
                     case 2: // Place a bid
-                        placeBid(auctionType, acc, server, in);
+                        placeBid(auctionType);
                         break;
                     case 3: // Open an Auction
                         options.clear();
                         options.add("For a new item");
                         options.add("For an existing item");
-                        internalMenuChoice = printCustomMenu(in, "Open an Auction", options);
+                        internalMenuChoice = printCustomMenu("Open an Auction", options);
                         switch (internalMenuChoice) {
                             case 1: // For a new item
-                                openRevAucNewItem(acc, server, in);
+                                openRevAucNewItem();
                                 break;
                             case 2: // For an existing item
-                                openRevAucExistItem(acc, server, in);
+                                openRevAucExistItem();
                                 break;
                             case 0:
                                 continue;
@@ -191,7 +169,7 @@ public class MultiClient extends Client{
                         }
                         break;
                     case 4: // Close an Auction
-                        closeAuction(auctionType, acc, server, in);
+                        closeAuction(auctionType);
                         break;
                     default:
                         break;
@@ -206,37 +184,32 @@ public class MultiClient extends Client{
                 options.add("Place a Sell Request");
                 options.add("Open an Auction");
                 options.add("Close an Auction");
-                internalMenuChoice = printCustomMenu(in, "Double Auction", options);
+                internalMenuChoice = printCustomMenu("Double Auction", options);
                 switch (internalMenuChoice) {
                     case 1: // list
                         System.out.println(customTitleToString("All Open Auctions"));
-                        msg = server.openAuctionsToString(auctionType);
-                        if(verify(msg)){
-                            System.out.print((String)msg.getMessage());
-                        } else {
-                            throw new SignatureException("Received message failed to verify");
-                        }
-                        confirmUserProceed(in);
+                        System.out.print((String) getVerifiedMessage(server.openAuctionsToString(auctionType)));
+                        in.confirmUserProceed();
                         break;
                     case 2: // place a buy
-                        placeBuyReq(acc, server, in);
+                        placeBuyReq();
                         break;  
                     case 3: // place a sell
-                        placeSellReq(acc, server, in);
+                        placeSellReq();
                         break;   
                     case 4: //open auction
                         options.clear();
                         options.add("For a new item");
                         options.add("For an existing item");
-                        internalMenuChoice = printCustomMenu(in, "Open an Auction", options);
+                        internalMenuChoice = printCustomMenu("Open an Auction", options);
                         switch (internalMenuChoice) {
                             case 1: // For a new item
-                                openDoubleAucNewItem(acc, server, in);
-                                confirmUserProceed(in);
+                                openDoubleAucNewItem();
+                                in.confirmUserProceed();
                                 break;
                             case 2: // For an existing item
-                                openDoubleAucExistItem(acc, server, in);
-                                confirmUserProceed(in);
+                                openDoubleAucExistItem();
+                                in.confirmUserProceed();
                                 break;
                             case 0:
                                 continue;
@@ -245,7 +218,7 @@ public class MultiClient extends Client{
                         }                     
                         break; 
                     case 5: // close auction
-                        closeAuction(auctionType, acc, server, in);
+                        closeAuction(auctionType);
                         break;                        
                     default:
                         break;
@@ -272,23 +245,19 @@ public class MultiClient extends Client{
         } catch (Exception e) {e.printStackTrace();}
         return false;
     }
-    
-    public static boolean confirmUserProceed(Scanner in){
-        System.out.println("\nEnter K to continue");
-        String out;
-        printInputChar();
-        do{
-            out = in.nextLine();
-        } while(!(out.toLowerCase().equals("k")));
-        clearConsole();
-        return true;
+    public static Object getVerifiedMessage(SignedMessage msg) throws SignatureException{
+        if(verify(msg)){
+            return msg.getMessage();
+        } else {
+            throw new SignatureException("Received message failed to verify");
+        }
     }
     public static String customTitleToString(String title){
         String out = "---------------" + title + "---------------";
         out += "\n";
         return out;
     }
-    public static int printCustomMenu(Scanner in, String title, LinkedList<String> options){
+    public static int printCustomMenu(String title, LinkedList<String> options){
         System.out.println(customTitleToString(title));
         int i = 1;
         for (String string : options) {
@@ -300,18 +269,15 @@ public class MultiClient extends Client{
 
         int out = 0;
         do{
-            try {
-                printInputChar();
-                out = in.nextInt(); in.nextLine();
-            } catch (Exception e) {
+            out = in.nextInt();
+            if(out < 0 || out > i){
                 System.out.println("Invalid input. Enter one of the menu option numbers");
-                in.nextLine();
             }
         } while(out < 0 || out > i);
-        clearConsole();
+        in.clearConsole();
         return out;
     }
-    public static int printCustomMenuWithQuit(Scanner in, String title, LinkedList<String> options){
+    public static int printCustomMenuWithQuit(String title, LinkedList<String> options){
         System.out.println(customTitleToString(title));
         int i = 1;
         for (String string : options) {
@@ -323,15 +289,12 @@ public class MultiClient extends Client{
 
         int out = 0;
         do{
-            try {
-                printInputChar();
-                out = in.nextInt(); in.nextLine();
-            } catch (Exception e) {
+            out = in.nextInt();
+            if(out < 0 || out > i){
                 System.out.println("Invalid input. Enter one of the menu option numbers");
-                in.nextLine();
             }
         } while(out < 0 || out > i);
-        clearConsole();
+        in.clearConsole();
         if(out == 0){
             System.out.println("Quitting...");
             in.close();
@@ -340,7 +303,7 @@ public class MultiClient extends Client{
         return out;
     }
 
-    public static void openForwAucNewItem(UserAccount acc, IAuction server, Scanner in){
+    public static void openForwAucNewItem(){
         AuctionItem newItem;
         String newItemTitle;
         String newItemDescription;
@@ -351,32 +314,31 @@ public class MultiClient extends Client{
             System.out.println(customTitleToString("Open Forward Auction for a New Item"));
                                 
             System.out.println("New item's title");
-            printInputChar(); newItemTitle = in.nextLine();
+            newItemTitle = in.nextLine();
             System.out.println("New item's description");
-            printInputChar(); newItemDescription = in.nextLine();
+            newItemDescription = in.nextLine();
             System.out.println("Starting price");
-            printInputChar(); startingPrice = in.nextFloat();
+            startingPrice = in.nextPositiveFloat();
             System.out.println("Reserve price");
-            printInputChar(); reservePrice = in.nextFloat();
+            reservePrice = in.nextPositiveFloat();
 
             newItem = new AuctionItem(newItemTitle, newItemDescription);
             server.storeAuctionItem(newItem);
             server.createForwardAuction(acc, newItem, startingPrice, reservePrice);
 
-            clearConsole();
+            in.clearConsole();
             System.out.println(customTitleToString("New Item Added"));
             System.out.print(newItem.infoToString());
             System.out.println("Starting price: " + startingPrice);
 
-            confirmUserProceed(in);
+            in.confirmUserProceed();
             
         } catch (Exception e) {
             System.err.println("Exception:");
             e.printStackTrace();
         }
     } 
-    public static void openForwAucExistItem(UserAccount acc, IAuction server, Scanner in){
-        SignedMessage msg;
+    public static void openForwAucExistItem(){
         AuctionItem item;
         int auctionID;
         int itemID;
@@ -387,31 +349,10 @@ public class MultiClient extends Client{
         do {
             try {
                 System.out.println(customTitleToString("Open Auction for an Existing Item"));
-                msg = server.availableItemsToString();
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
+                System.out.print((String)getVerifiedMessage(server.availableItemsToString()));
                 System.out.println("Item ID");
-                try {
-                    printInputChar();
-                    itemID = in.nextInt(); in.nextLine();
-                } catch (Exception e) {
-                    System.out.println("Invalid input. Enter an integer");
-                    continue;
-                }
-                if(itemID <= 0){
-                    System.out.println("Invalid item ID. Enter a positive integer");
-                    continue;
-                } 
-
-                msg = server.getItemInfo(itemID);
-                if(verify(msg)){
-                    item = (AuctionItem) msg.getMessage();
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
+                itemID = in.nextInt();
+                item = (AuctionItem) getVerifiedMessage(server.getItemInfo(itemID));
 
                 // if id does not exist
                 if(item == null){
@@ -421,213 +362,129 @@ public class MultiClient extends Client{
 
                 // valid input handling                
                 System.out.println("Starting price");
-                printInputChar(); startingPrice = in.nextFloat();
+                startingPrice = in.nextPositiveFloat();
                 System.out.println("Reserve price");
-                printInputChar(); reservePrice = in.nextFloat();
+                reservePrice = in.nextPositiveFloat();
 
-                msg = server.createForwardAuction(acc, item, startingPrice, reservePrice);
-                if(verify(msg)){
-                    auctionID = (int) msg.getMessage();
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-
-                clearConsole();
+                auctionID = (int) getVerifiedMessage(server.createForwardAuction(acc, item, startingPrice, reservePrice));
+                in.clearConsole();
                 System.out.println(customTitleToString("New Auction Opened"));
-                msg = server.getAuctionInfo(auctionID);
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-
-                confirmUserProceed(in);
+                System.out.print((String) getVerifiedMessage(server.getAuctionInfo(auctionID)));
+                in.confirmUserProceed();
                 stayInMenu = false;
 
+            } catch(SignatureException e){
+                System.out.println("Signature Exception. Message received failed to verify.");
             } catch (Exception e) {
                 System.err.println("Exception:");
                 e.printStackTrace();
             }
         } while(stayInMenu);
     } 
-    public static void openRevAucNewItem(UserAccount acc, IAuction server, Scanner in){
+    public static void openRevAucNewItem(){
         AuctionItem newItem;
         String newItemTitle;
         String newItemDescription;
+        int auctionID;
 
         try {
             System.out.println(customTitleToString("Open Reverse Auction for a New Item"));
             
             System.out.println("New item's title");
-            printInputChar(); newItemTitle = in.nextLine();
+            newItemTitle = in.nextLine();
             System.out.println("New item's description");
-            printInputChar(); newItemDescription = in.nextLine();
+            newItemDescription = in.nextLine();
             
             newItem = new AuctionItem(newItemTitle, newItemDescription);
             server.storeAuctionItem(newItem);
-            SignedMessage msg = server.createReverseAuction(acc, newItem);
-            if(verify(msg)){
-                int aucID = (Integer) msg.getMessage();
-                msg = server.getAuctionInfo(aucID);
-                if(verify(msg)){
-                    System.out.println("New auction created");
-                    System.out.println((String)msg.getMessage());
-                }
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-            clearConsole();
+
+            auctionID = (Integer) getVerifiedMessage(server.createReverseAuction(acc, newItem));
+            System.out.println("New Auction");
+            System.out.print((String)getVerifiedMessage(server.getAuctionInfo(auctionID)));
+            in.clearConsole();
             
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static void openRevAucExistItem(UserAccount acc, IAuction server, Scanner in){
-        SignedMessage msg;
+    public static void openRevAucExistItem(){
         AuctionItem item;
         int itemID;
+        int auctionID;
         boolean stayInMenu = true;
+
         do{
             try {
                 System.out.println(customTitleToString("Open Reverse Auction for a New Item"));
-                msg = server.availableItemsToString();
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
+                System.out.print((String)getVerifiedMessage(server.availableItemsToString()));
                 System.out.println("Item ID");
-                try {
-                    printInputChar();
-                    itemID = in.nextInt(); in.nextLine();
-                } catch (Exception e) {
-                    System.out.println("Invalid input. Enter an integer");
-                    continue;
-                }
-                if(itemID <= 0){
-                    System.out.println("Invalid item ID. Enter a positive integer");
-                    continue;
-                } 
 
-                msg = server.getItemInfo(itemID);
-                if(verify(msg)){
-                    item = (AuctionItem) msg.getMessage();
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-
-                // if id does not exist
+                itemID = in.nextInt(); 
+                item = (AuctionItem) getVerifiedMessage(server.getItemInfo(itemID));
                 if(item == null){
                     System.out.println("Item ID does not exist");
                     continue;
                 }
+                in.clearConsole();
+                auctionID = (Integer) getVerifiedMessage(server.createReverseAuction(acc, item));
+                System.out.println("New Auction");
+                System.out.print((String)getVerifiedMessage(server.getAuctionInfo(auctionID)));
 
-                clearConsole();
-                msg = server.createReverseAuction(acc, item);
-                if(verify(msg)){
-                    int aucID = (Integer) msg.getMessage();
-                    msg = server.getAuctionInfo(aucID);
-                    if(verify(msg)){
-                        System.out.println("New auction created");
-                        System.out.println((String)msg.getMessage());
-                    }
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-
-                confirmUserProceed(in);
+                in.confirmUserProceed();
                 stayInMenu = false;
-                
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } while(stayInMenu);
     }
-    public static void openDoubleAucNewItem(UserAccount acc, IAuction server, Scanner in){
+    public static void openDoubleAucNewItem(){
         AuctionItem newItem;
         String newItemTitle;
         String newItemDescription;
+        int auctionID;
 
         try {
             System.out.println(customTitleToString("Open Double Auction for a New Item"));
-            
             System.out.println("New item's title");
-            printInputChar(); newItemTitle = in.nextLine();
+            newItemTitle = in.nextLine();
             System.out.println("New item's description");
-            printInputChar(); newItemDescription = in.nextLine();
-            
+            newItemDescription = in.nextLine();
+
             newItem = new AuctionItem(newItemTitle, newItemDescription);
             server.storeAuctionItem(newItem);
-            SignedMessage msg = server.createDoubleAuction(acc, newItem);
-            if(verify(msg)){
-                int aucID = (Integer) msg.getMessage();
-                msg = server.getAuctionInfo(aucID);
-                if(verify(msg)){
-                    System.out.println("New auction created");
-                    System.out.println((String)msg.getMessage());
-                }
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
+            auctionID = (Integer) getVerifiedMessage(server.createDoubleAuction(acc, newItem));
+            System.out.println("New Auction");
+            System.out.println((String) getVerifiedMessage(server.getAuctionInfo(auctionID)));
             
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static void openDoubleAucExistItem(UserAccount acc, IAuction server, Scanner in){
-        SignedMessage msg;
+    public static void openDoubleAucExistItem(){
         AuctionItem item;
         int itemID;
+        int auctionID;
         boolean stayInMenu = true;
+
         do{
             try {
                 System.out.println(customTitleToString("Open Double Auction for a New Item"));
-                msg = server.availableItemsToString();
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
+                System.out.print((String) getVerifiedMessage(server.availableItemsToString()));
                 System.out.println("Item ID");
-                try {
-                    printInputChar();
-                    itemID = in.nextInt(); in.nextLine();
-                } catch (Exception e) {
-                    System.out.println("Invalid input. Enter an integer");
-                    continue;
-                }
-                if(itemID <= 0){
-                    System.out.println("Invalid item ID. Enter a positive integer");
-                    continue;
-                } 
-
-                msg = server.getItemInfo(itemID);
-                if(verify(msg)){
-                    item = (AuctionItem) msg.getMessage();
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-
+                itemID = in.nextInt();
+                item = (AuctionItem) getVerifiedMessage(server.getItemInfo(itemID));
                 // if id does not exist
                 if(item == null){
                     System.out.println("Item ID does not exist");
                     continue;
                 }
 
-                clearConsole();
-                msg = server.createDoubleAuction(acc, item);
-                if(verify(msg)){
-                    int aucID = (Integer) msg.getMessage();
-                    msg = server.getAuctionInfo(aucID);
-                    if(verify(msg)){
-                        System.out.println("New auction created");
-                        System.out.println((String)msg.getMessage());
-                    }
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
+                in.clearConsole();
+                auctionID = (Integer) getVerifiedMessage(server.createDoubleAuction(acc, item));
+                System.out.println("New Auction");
+                System.out.println((String) getVerifiedMessage(server.getAuctionInfo(auctionID)));
 
-                confirmUserProceed(in);
+                in.confirmUserProceed();
                 stayInMenu = false;
                 
             } catch (Exception e) {
@@ -636,224 +493,119 @@ public class MultiClient extends Client{
         } while(stayInMenu);
 
     }
-    public static void closeAuction(String auctionType, UserAccount acc, IAuction server, Scanner in) throws SignatureException{
+    public static void closeAuction(String auctionType) throws SignatureException{
         int auctionID;
-        Auction closedAu;
-        SignedMessage msg;
+        Auction closedAuction;
 
         try {
             System.out.println(customTitleToString("Close an Auction"));
-            msg = server.openAuctionsToString(auctionType);
-            if(verify(msg)){
-                System.out.print((String)msg.getMessage());
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-            printInputChar();
-            auctionID = in.nextInt(); in.nextLine();
+            System.out.print((String) getVerifiedMessage(server.openAuctionsToString(auctionType)));
+            auctionID = in.nextInt();
 
-            msg = server.getAuction(auctionID);          
-            if(verify(msg)){
-                closedAu = (Auction) msg.getMessage();
-                msg = server.closeAuction(acc, closedAu.getAuctionID());
-                if(verify(msg)){
-                    System.out.print((String)msg.getMessage());
-                } else {
-                    throw new SignatureException("Received message failed to verify");
-                }
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-            confirmUserProceed(in);
+            closedAuction = (Auction) getVerifiedMessage(server.getAuction(auctionID));
+            System.out.print((String) getVerifiedMessage(server.closeAuction(acc, closedAuction.getAuctionID())));
+            in.confirmUserProceed();
 
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
-    public static void placeBid(String aucType, UserAccount acc, IAuction server, Scanner in) throws SignatureException{
+    public static void placeBid(String aucType) throws SignatureException{
         int auctionID;
         float bidPrice = -1;
-        String output;
-        SignedMessage msg;
 
         try {
             System.out.println(customTitleToString("Place a Bid"));
-            msg = server.openAuctionsToString(aucType);
-            if(verify(msg)){
-                System.out.println((String) msg.getMessage());
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
+            System.out.println((String) getVerifiedMessage(server.openAuctionsToString(aucType)));
             System.out.println("Select an auction (input the ID)");
-            printInputChar();
-            auctionID = in.nextInt(); in.nextLine();
-
-            do{
+            auctionID = in.nextInt();
             System.out.println("Enter the bid amount");
-            printInputChar(); bidPrice = in.nextFloat();
-            if(bidPrice <= 0){
-                System.out.println("Enter a positive sum");
-            }
-            } while(bidPrice <= 0);
+            bidPrice = in.nextPositiveFloat();
 
             switch (aucType) {
                 case "f":
-                    msg = server.submitForwAucBid(acc, auctionID, new Bid(bidPrice, acc.getName(), acc.getEmail()));
+                    System.out.print((String) getVerifiedMessage(server.submitForwAucBid(acc, auctionID, new Bid(bidPrice, acc.getName(), acc.getEmail()))));
                     break;
                 case "r":
-                    msg = server.submitRevAucBid(acc, auctionID, new Bid(bidPrice, acc.getName(), acc.getEmail()));
+                    System.out.println((String) getVerifiedMessage(server.submitRevAucBid(acc, auctionID, new Bid(bidPrice, acc.getName(), acc.getEmail()))));
+                    break;
                 default:
                     break;
             }
-            if(verify(msg)){
-                output = (String) msg.getMessage();
-                System.out.println(output);
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
+            in.confirmUserProceed();
 
-            confirmUserProceed(in);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
-    public static void placeSellReq(UserAccount acc, IAuction server, Scanner in){
+    public static void placeSellReq(){
         int auctionID;
-        String output;
-        SignedMessage msg;
         String aucType = "d";
         float amount;
 
         try {
             System.out.println(customTitleToString("Place a Sell Request"));
-            msg = server.openAuctionsToString(aucType);
-            if(verify(msg)){
-                System.out.println((String) msg.getMessage());
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
+            System.out.println((String) getVerifiedMessage(server.openAuctionsToString(aucType)));
             System.out.println("Select an auction (input the ID)");
-            printInputChar();
-            auctionID = in.nextInt(); in.nextLine();
-
-            do{
+            auctionID = in.nextInt();
             System.out.println("Enter the bid amount");
-            printInputChar(); amount = in.nextFloat();
-            if(amount <= 0){
-                System.out.println("Enter a positive sum");
-            }
-            } while(amount <= 0);
-
-            msg = server.submitDoubleAucSell(acc, auctionID, new Bid(amount, acc.getName(), acc.getEmail()));
-
-            if(verify(msg)){
-                output = (String) msg.getMessage();
-                System.out.println(output);
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-
-            confirmUserProceed(in);
+            amount = in.nextPositiveFloat();
+            System.out.println((String) getVerifiedMessage(server.submitDoubleAucSell(acc, auctionID, new Bid(amount, acc.getName(), acc.getEmail()))));
+            in.confirmUserProceed();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static void placeBuyReq(UserAccount acc, IAuction server, Scanner in){
+    public static void placeBuyReq(){
         int auctionID;
-        String output;
-        SignedMessage msg;
         String aucType = "d";
         float amount;
 
         try {
             System.out.println(customTitleToString("Place a Buy Request"));
-            msg = server.openAuctionsToString(aucType);
-            if(verify(msg)){
-                System.out.println((String) msg.getMessage());
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
+            System.out.println((String) getVerifiedMessage(server.openAuctionsToString(aucType)));
             System.out.println("Select an auction (input the ID)");
-            printInputChar();
-            auctionID = in.nextInt(); in.nextLine();
-
-            do{
+            auctionID = in.nextInt();
             System.out.println("Enter the bid amount");
-            printInputChar(); amount = in.nextFloat();
-            if(amount <= 0){
-                System.out.println("Enter a positive sum");
-            }
-            } while(amount <= 0);
-
-            msg = server.submitDoubleAucBuy(acc, auctionID, new Bid(amount, acc.getName(), acc.getEmail()));
-
-            if(verify(msg)){
-                output = (String) msg.getMessage();
-                System.out.println(output);
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-
-            confirmUserProceed(in);
+            amount = in.nextPositiveFloat();
+            System.out.println((String) getVerifiedMessage(server.submitDoubleAucBuy(acc, auctionID, new Bid(amount, acc.getName(), acc.getEmail()))));
+            in.confirmUserProceed();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static UserAccount login(IAuction server, Scanner in){
-        System.out.println(customTitleToString("Log in"));
+    public static UserAccount login(){
+        UserAccount acc;
         try{
-        System.out.println("Email");
-        printInputChar(); String email = in.nextLine();
-        System.out.println("Password");
-        printInputChar(); String pass = in.nextLine();
-
-        SignedMessage msg = server.login(email, pass);
-        if(verify(msg)){
-            UserAccount acc = (UserAccount) msg.getMessage();
+            System.out.println(customTitleToString("Log in"));
+            System.out.println("Email");
+            String email = in.nextLine();
+            System.out.println("Password");
+            String pass = in.nextLine();
+            acc = (UserAccount) getVerifiedMessage(server.login(email, pass));
             return acc;
-        } else {
-            throw new SignatureException("Received message failed to verify");
+        } catch(Exception e){
+            e.printStackTrace(); 
+            return null;
         }
-        } catch(Exception e){e.printStackTrace(); return null;}
     }
-    public static boolean register(IAuction server, Scanner in){
+    public static boolean register(){
         System.out.println(customTitleToString("Register"));
         String name = "";
         String email = "";
         String password = "";
         try {
-
-            do{
             System.out.println("Name");
-            printInputChar(); name = in.nextLine();
-            if(name.equals("")){
-                System.out.println("Enter a non-empty name");
-            }
-            } while(name.equals(""));
-
-            do{
+            name = in.nextNonEmptyLine();
             System.out.println("Email");
-            printInputChar(); email = in.nextLine();
-            if(email.equals("")){
-                System.out.println("Enter a non-empty email");
-            }
-            } while(email.equals(""));
-
-            do{
+            email = in.nextNonEmptyLine();
             System.out.println("Password");
-            printInputChar(); password = in.nextLine();
-            if(password.equals("")){
-                System.out.println("Enter a non-empty password");
-            }
-            } while(password.equals(""));
+            password = in.nextNonEmptyLine();
+            return (boolean) getVerifiedMessage(server.register(name, email, password));
 
-            SignedMessage msg = server.register(name, email, password);
-            if(verify(msg)){
-                return (boolean) msg.getMessage();
-            } else {
-                throw new SignatureException("Received message failed to verify");
-            }
-        } catch (Exception e) {e.printStackTrace(); return false;}
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            return false;
+        }
     }
-    
 }
