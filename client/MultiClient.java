@@ -55,10 +55,6 @@ public class MultiClient{
         }
     } while(acc == null);
 
-    // server.createForwardAuction(acc, ai1, 400, 500); 
-    // server.createReverseAuction(acc, ai2); 
-    // server.createDoubleAuction(acc, ai3);
-
     String auctionType;
     do{ // Main Menu
         
@@ -302,7 +298,6 @@ public class MultiClient{
         }
         return out;
     }
-
     public static void openForwAucNewItem(){
         AuctionItem newItem;
         String newItemTitle;
