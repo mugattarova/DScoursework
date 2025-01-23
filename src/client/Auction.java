@@ -3,16 +3,14 @@ import java.io.Serializable;
 public abstract class Auction implements Serializable{
     private static int auctionIDCount = 0;
 
-    UserAccount owner;
+    protected UserAccount owner;
     protected int auctionID;
     protected AuctionItem auctionItem;
-    protected boolean isClosed;
 
     public Auction(UserAccount _owner, AuctionItem _auctionItem){
         owner = _owner;
         auctionID = ++auctionIDCount;
         auctionItem = _auctionItem;
-        isClosed = false;
     }
     
     public String infoToString(){
@@ -39,4 +37,17 @@ public abstract class Auction implements Serializable{
         return auctionItem;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof Auction)){
+            return false;
+        }
+        Auction a = (Auction) obj;
+        if(this.owner.equals(a.owner) && this.auctionID==a.auctionID && this.auctionItem.equals(a.auctionItem)){
+            return true;
+        } else{
+            return false;
+        }
+
+    }
 }

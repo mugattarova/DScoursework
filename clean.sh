@@ -1,1 +1,2 @@
-rm */**.class
+rm -r bin/*
+rm */*/*.class

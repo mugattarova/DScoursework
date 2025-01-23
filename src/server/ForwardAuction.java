@@ -72,7 +72,7 @@ public class ForwardAuction extends Auction{
         return false;
     }
     public Bid getWinnerBid(){
-        if(isReserveMet() && isClosed){
+        if(isReserveMet()){
             return highestBid;
         }
         return null;
@@ -80,7 +80,6 @@ public class ForwardAuction extends Auction{
     @Override
     public String closeAuction(UserAccount acc){
         if(verifyUser(acc)){
-            isClosed = true;
             if(!hasBids()){
                 return "No bids were placed. The item was not sold.";
             } else if(!isReserveMet()){

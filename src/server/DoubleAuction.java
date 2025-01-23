@@ -1,4 +1,3 @@
-
 import java.util.*;
 import java.util.Collections;
 import java.lang.Math;
@@ -34,7 +33,6 @@ public class DoubleAuction extends Auction{
     }
     @Override
     public String closeAuction(UserAccount acc){
-        isClosed = true;
         String out = "";
         if(verifyUser(acc)){
             if(sellers.size() == 0 || buyers.size() == 0){

@@ -38,7 +38,7 @@ public class InputHandler {
         String out;
         printInputChar();
         do{
-            out = nextLine();
+            out = in.nextLine();
         } while(!(out.toLowerCase().equals("k")));
         clearConsole();
         return true;

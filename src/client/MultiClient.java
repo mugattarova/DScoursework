@@ -18,7 +18,7 @@ public class MultiClient{
     new MultiClient();
 
     try {
-    String nameServer = "myserver";
+    String nameServer = "frontendserver";
     Registry registry = LocateRegistry.getRegistry("localhost");
     server = (IAuctionApp) registry.lookup(nameServer);
 
@@ -233,15 +233,15 @@ public class MultiClient{
     }
     }
 
-    public static boolean verify(SignedMessage msg){
+    public static boolean verify(SignedMessage<?> msg){
         try {
-            if(MessageEncryptionHelper.verify(MessageEncryptionHelper.getPubKey("D:/Personal/LU_Leipzig_University/3Y/311DS/coursework1/client/public_key.der"), msg)){
+            if(MessageEncryptionHelper.verify(MessageEncryptionHelper.getPubKey("./public_key.der"), msg)){
                 return true;
             }
         } catch (Exception e) {e.printStackTrace();}
         return false;
     }
-    public static Object getVerifiedMessage(SignedMessage msg) throws SignatureException{
+    public static Object getVerifiedMessage(SignedMessage<?> msg) throws SignatureException{
         if(verify(msg)){
             return msg.getMessage();
         } else {
@@ -347,7 +347,7 @@ public class MultiClient{
                 System.out.print((String)getVerifiedMessage(server.availableItemsToString()));
                 System.out.println("Item ID");
                 itemID = in.nextInt();
-                item = (AuctionItem) getVerifiedMessage(server.getItemInfo(itemID));
+                item = (AuctionItem) getVerifiedMessage(server.getItem(itemID));
 
                 // if id does not exist
                 if(item == null){
@@ -415,7 +415,7 @@ public class MultiClient{
                 System.out.println("Item ID");
 
                 itemID = in.nextInt(); 
-                item = (AuctionItem) getVerifiedMessage(server.getItemInfo(itemID));
+                item = (AuctionItem) getVerifiedMessage(server.getItem(itemID));
                 if(item == null){
                     System.out.println("Item ID does not exist");
                     continue;
@@ -467,7 +467,7 @@ public class MultiClient{
                 System.out.print((String) getVerifiedMessage(server.availableItemsToString()));
                 System.out.println("Item ID");
                 itemID = in.nextInt();
-                item = (AuctionItem) getVerifiedMessage(server.getItemInfo(itemID));
+                item = (AuctionItem) getVerifiedMessage(server.getItem(itemID));
                 // if id does not exist
                 if(item == null){
                     System.out.println("Item ID does not exist");

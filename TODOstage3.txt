@@ -1,3 +1,0 @@
-- compilation via bin folder
-- organize sharedobj
-- restructure multiclient

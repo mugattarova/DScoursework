@@ -43,7 +43,7 @@ public class MessageEncryptionHelper {
 
         return null;
     }
-    public static boolean verify(PublicKey pub, SignedMessage msg){
+    public static boolean verify(PublicKey pub, SignedMessage<?> msg){
         try {
             byte[] signature = msg.getSignature();
             Signature sig = Signature.getInstance("SHA256withRSA");

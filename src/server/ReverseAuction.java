@@ -57,7 +57,6 @@ public class ReverseAuction extends Auction{
     @Override
     public String closeAuction(UserAccount acc){
         if(verifyUser(acc)){
-            isClosed = true;
             if(chosenBid != null){
                 return "Auction closed successfully!\n--- The Winner ---\n" + chosenBid.infoToString();
             } else {

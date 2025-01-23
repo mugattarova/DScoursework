@@ -1,17 +1,14 @@
 import java.security.*;
 import java.io.Serializable;
 
-public class SignedMessage implements Serializable{
-    Serializable message;
-    byte[] hashedMessage;
-    byte[] signature;
+public class SignedMessage<T extends Serializable> implements Serializable{
+    private T message;
+    private byte[] signature;
 
-    public SignedMessage(Serializable _message, PrivateKey privKey){
+    public SignedMessage(T _message, PrivateKey privKey){
         message = _message;
 
         try {
-            hashedMessage = MessageEncryptionHelper.hashMessage(message);
-
             Signature sig = Signature.getInstance("SHA256withRSA");
             sig.initSign(privKey);
             sig.update(MessageEncryptionHelper.objectToByteArray(message));
@@ -22,11 +19,8 @@ public class SignedMessage implements Serializable{
         }
     }
     
-    public Serializable getMessage() {
+    public T getMessage() {
         return message;
-    }
-    public byte[] getHashedMessage() {
-        return hashedMessage;
     }
     public byte[] getSignature() {
         return signature;

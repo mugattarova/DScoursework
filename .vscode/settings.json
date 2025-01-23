@@ -1,5 +1,8 @@
 {
     "java.project.referencedLibraries": [
-        "lib/**/*.jar"
+        "src/lib/*.jar"
+    ],
+    "cSpell.words": [
+      "sharedobj"
     ]
 }

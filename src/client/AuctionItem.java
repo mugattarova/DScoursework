@@ -3,26 +3,19 @@ import java.io.Serializable;
 
 public class AuctionItem implements Serializable{
 
-    public enum ItemCondition {
-        NEW,
-        USED
-    }
-
     private static int itemIDCount = 0;
-    private int itemId;
+    private int itemID;
     private String itemTitle;
     private String itemDescription;
-    //private ItemCondition itemCond;
 
     public AuctionItem(String _itemTitle, String _itemDescription){
-        itemId = ++itemIDCount;
+        itemID = ++itemIDCount;
         itemTitle = _itemTitle;
         itemDescription = _itemDescription;
-        //itemCond = _itemCond;
     }
 
-    public int getItemId(){
-        return itemId;
+    public int getItemID(){
+        return itemID;
     }
 
     public String getItemTitle(){
@@ -36,11 +29,23 @@ public class AuctionItem implements Serializable{
     public String infoToString(){
         String out = "";
 
-        out += "Item ID: " + itemId + "\n";
+        out += "Item ID: " + itemID + "\n";
         out += "Title: " + itemTitle + "\n";
         out += "Description: " + itemDescription + "\n";
-        //out += "Condition: " + itemCond.toString() + "\n";
 
         return out;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof AuctionItem)){
+            return false;
+        }
+        AuctionItem ai = (AuctionItem) obj;
+        if (( this.itemID == ai.itemID ) && ( this.itemTitle.equals(ai.itemTitle) ) && ( this.itemDescription.equals(ai.itemDescription) )){
+            return true;
+        } else{
+            return false;
+        }
     }
 }

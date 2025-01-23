@@ -1,14 +1,25 @@
 #!/bin/bash
 ./clean.sh
 
-cd sharedobj
-javac -cp "./lib/jgroups-3.6.20.Final.jar;." *.java
-cd ..
-cp ./sharedobj/*.class ./client/
-cp ./sharedobj/*.class ./server/
+find ./src/ -type d | sed 's/\.\/src//g' | xargs -I {} mkdir -p bin"/{}"
 
-cd client
-javac -cp "./lib/jgroups-3.6.20.Final.jar;." *.java
+cd src/sharedobj
+javac -cp "..\lib\jgroups-3.6.20.Final.jar;." *.java 
+cd ..
+cp -R sharedobj/*.class client/
+cp -R sharedobj/*.class server/
+
+cd ../src/client
+javac -cp "..\lib\jgroups-3.6.20.Final.jar;." *.java 
 
 cd ../server
-javac -cp "./lib/jgroups-3.6.20.Final.jar;." *.java
+javac -cp "..\lib\jgroups-3.6.20.Final.jar;." *.java 
+
+cd ../..
+cp -R src/client/*.class bin/client/
+cp -R src/client/*.der bin/client/
+cp -R src/server/*.class bin/server/
+cp -R src/server/*.der bin/server/
+cp -R src/server/*.pem bin/server/
+
+rm src/*/*.class
